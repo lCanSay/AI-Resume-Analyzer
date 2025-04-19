@@ -5,6 +5,7 @@ from resume.models import Resume
 
 class JobListing(models.Model):
     recruiter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    company = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     description = models.TextField()
     location = models.CharField(max_length=255)
