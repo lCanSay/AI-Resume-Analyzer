@@ -1,9 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import UserRegisterSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomAuthTokenSerializer, UserRegisterSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+
 
 class RegisterView(APIView):
     def post(self, request):
@@ -20,5 +22,18 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['role'] = user.role
         return token
 
-class LoginView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+class LoginView(APIView):
+    def post(self, request):
+        serializer = CustomAuthTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = authenticate(email=email, password=request.data['password'])
+            
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                "role": user.role
+            })
+
+        return Response(serializer.errors, status=400)

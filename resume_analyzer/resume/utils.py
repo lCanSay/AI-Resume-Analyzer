@@ -27,8 +27,48 @@ def extract_resume_data(text):
     phones = re.findall(r'\+?\d[\d\-\s\(\)]{9,}\d', text)
     phones = [phone for phone in phones if len(re.sub(r'\D', '', phone)) >= 10]
 
-    skills_keywords = ["python", "java", "sql", "django", "react", "aws", "git"]
-    skills = [token.text.lower() for token in doc if token.text.lower() in skills_keywords]
+    skills_keywords = [
+    # Programming Languages
+    "python", "java", "javascript", "c++", "c#", "ruby", "php", "typescript",
+    "go", "swift", "kotlin", "r", "scala",
+
+    # Web Development
+    "html", "css", "javascript", "typescript", "react", "angular", "vue", "django", "flask",
+    "node.js", "express.js", "next.js", "fastapi",
+
+    # Databases
+    "sql", "mysql", "postgresql", "mongodb", "sqlite", "oracle", "firebase",
+
+    # Cloud Technologies
+    "aws", "amazon web services", "azure", "google cloud platform", "gcp",
+
+    # DevOps and CI/CD
+    "docker", "kubernetes", "jenkins", "gitlab", "github", "terraform",
+
+    # Data Science and Analytics
+    "pandas", "numpy", "matplotlib", "seaborn", "scikit-learn", "tensorflow", "pytorch",
+    "power bi", "tableau", "excel", "hadoop", "spark",
+
+    # UI/UX and Design
+    "figma", "sketch", "adobe xd", "photoshop", "illustrator", "invision", "wireframing", "prototyping", "ui/ux design",
+
+    # Testing
+    "selenium", "cypress", "pytest", "unittest", "postman",
+
+    # Project Management / Collaboration
+    "jira", "trello", "confluence", "monday.com",
+
+    # Others
+    "git", "rest api", "graphql", "agile", "scrum", "linux", "bash", "api development", "microservices"
+]
+
+    skills = []
+    text_lower = text.lower()
+    for skill in skills_keywords:
+        if skill in text_lower:
+            skills.append(skill)
+    skills = list(set(skills))
+
     
     experience_years = 0
     exp_patterns = re.findall(r'(\d+)\s*(\+)?\s*(years|year) of experience', text.lower())
@@ -44,10 +84,10 @@ def extract_resume_data(text):
         line_lower = line.lower().strip()
 
         if any(word in line_lower for word in stop_keywords):
-            capture_education = False  # stop capturing education once experience section starts
+            capture_education = False
 
         if any(keyword in line_lower for keyword in education_keywords):
-            capture_education = True  # start capturing education
+            capture_education = True
 
         if capture_education and line.strip():
             education.append(line.strip())

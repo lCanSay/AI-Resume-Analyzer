@@ -4,6 +4,7 @@ from .utils import calculate_match_score
 from .serializers import JobListingSerializer
 from .models import Application, Resume, JobListing
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -47,6 +48,11 @@ class JobListingListView(generics.ListAPIView):
     queryset = JobListing.objects.all()
     serializer_class = JobListingSerializer
     permission_classes = [permissions.AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['location', 'company', 'experience_required']
+    search_fields = ['title', 'description']
+
+
 
 class JobListingDeleteView(generics.DestroyAPIView):
     queryset = JobListing.objects.all()
@@ -77,16 +83,16 @@ class ApplyToJobView(APIView):
         matched_skills = set(parsed_skills) & set(required_skills)
         missing_skills = set(required_skills) - matched_skills
 
-        skill_score = (len(matched_skills) / max(len(required_skills), 1)) * 7.0
+        skill_score = (len(matched_skills) / max(len(required_skills), 1)) * 8.0
 
         job_text = f"{job_listing.title} {job_listing.description} {' '.join(job_listing.skills_required)}"
         resume_text = resume.parsed_data.get('text', '')
         resume_doc = nlp(resume_text.lower())
         job_doc = nlp(job_text.lower())
-        general_score = resume_doc.similarity(job_doc) * 3.0
+        general_score = resume_doc.similarity(job_doc) * 2.0
 
         total_score = round(skill_score + general_score, 1)
-        total_score = min(total_score, 9.5)
+        total_score = min(total_score, 10)
 
         if missing_skills:
             suggestions = f"To improve your chances, consider learning: {', '.join(missing_skills)}."
@@ -97,7 +103,8 @@ class ApplyToJobView(APIView):
             applicant=request.user,
             job_listing=job_listing,
             resume=resume.file,
-            match_score=int(total_score)
+            match_score=total_score,
+            suggestions=suggestions
         )
 
         serializer = ApplicationSerializer(application)
@@ -172,9 +179,25 @@ class JobSeekerApplicationsView(APIView):
                 'company': app.job_listing.company,
                 'resume_url': app.resume.url if app.resume else None,
                 'match_score': app.match_score,
+                'suggestions': app.suggestions,
                 'applied_at': app.created_at
             }
             for app in applications
         ]
 
         return Response(data)
+
+class JobListingDetailView(generics.RetrieveAPIView):
+    queryset = JobListing.objects.all()
+    serializer_class = JobListingSerializer
+    permission_classes = [permissions.AllowAny]
+    lookup_field = 'id'
+
+class RecruiterJobListingsView(generics.ListAPIView):
+    serializer_class = JobListingSerializer
+    permission_classes = [permissions.IsAuthenticated, IsRecruiter]
+
+    def get_queryset(self):
+        user = self.request.user
+        return JobListing.objects.filter(recruiter=user).order_by('-created_at')
+

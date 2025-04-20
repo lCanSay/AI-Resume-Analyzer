@@ -20,8 +20,9 @@ class Application(models.Model):
     applicant = models.ForeignKey(User, on_delete=models.CASCADE)
     job_listing = models.ForeignKey(JobListing, on_delete=models.CASCADE)
     resume = models.FileField(upload_to='applications/resumes/')
-    match_score = models.IntegerField(null=True, blank=True)
+    match_score = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    suggestions = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.applicant.username} - {self.job_listing.title}"
